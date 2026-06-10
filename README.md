@@ -62,5 +62,3 @@ Ideias que surgirem no meio do caminho vão para [`IDEIAS.md`](IDEIAS.md) — an
 **não** implementadas, até a Semana 4 estar pronta.
 
 ## Licença
-
-A definir (sugestão: MIT ou Apache-2.0).
