@@ -23,35 +23,39 @@ def formatar_tempo(segundos: float) -> str:
     return f"{minutos:02d}:{seg:02d}"
 
 
-def transcrever(caminho_audio: str, modelo: str = "small", idioma: str = "pt") -> str:
+def transcrever(caminho_audio: str, modelo: str = "small", idioma: str = "pt", verbose: bool = True) -> str:
     arquivo = Path(caminho_audio)
     if not arquivo.exists():
-        print(f"Arquivo nao encontrado: {arquivo}", file=sys.stderr)
-        sys.exit(1)
+        raise FileNotFoundError(f"Arquivo nao encontrado: {arquivo}")
 
-    print(f"Carregando modelo '{modelo}'...")
-    print("(na primeira vez o modelo e baixado, pode demorar alguns minutos)\n")
+    if verbose:
+        print(f"Carregando modelo '{modelo}'...")
+        print("(na primeira vez o modelo e baixado, pode demorar alguns minutos)\n")
 
     # device='cpu' + compute_type='int8' roda em qualquer maquina, sem GPU.
     # Quando voce tiver GPU NVIDIA, troque para device='cuda'.
     model = WhisperModel(modelo, device="cpu", compute_type="int8")
 
-    print(f"Transcrevendo: {arquivo.name}\n")
+    if verbose:
+        print(f"Transcrevendo: {arquivo.name}\n")
     segmentos, info = model.transcribe(str(arquivo), language=idioma, beam_size=5)
 
-    print(f"(idioma detectado: {info.language} | confianca: {info.language_probability:.0%})\n")
+    if verbose:
+        print(f"(idioma detectado: {info.language} | confianca: {info.language_probability:.0%})\n")
 
     partes = []
     for seg in segmentos:
         inicio = formatar_tempo(seg.start)
         fim = formatar_tempo(seg.end)
         texto = seg.text.strip()
-        print(f"[{inicio} -> {fim}] {texto}")
+        if verbose:
+            print(f"[{inicio} -> {fim}] {texto}")
         partes.append(texto)
 
     texto_completo = " ".join(partes)
-    print("\n----- Texto completo -----")
-    print(texto_completo)
+    if verbose:
+        print("\n----- Texto completo -----")
+        print(texto_completo)
     return texto_completo
 
 
@@ -76,7 +80,11 @@ def main() -> None:
     args = parser.parse_args()
 
     idioma = None if args.idioma == "auto" else args.idioma
-    transcrever(args.audio, args.modelo, idioma)
+    try:
+        transcrever(args.audio, args.modelo, idioma)
+    except FileNotFoundError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
